@@ -1,8 +1,4 @@
-# HOGformer: All-Weather Image Restoration
-
-A multi-weather image restoration project based on HOGformer, supporting restoration under diverse adverse weather conditions such as **snow (Snow100K)**, **raindrops (RainDrop)**, and **rain (Test1 / RainCityscapes, etc.)**. The model is fine-tuned on the Allweather dataset after DCPT pre-training.
-
-\---
+# Oriented Energy Prior Guided Sparse Transformer for All-in-One Image Restoration
 
 ## ✨ Features
 
@@ -12,7 +8,7 @@ A multi-weather image restoration project based on HOGformer, supporting restora
 * 🚀 Fine-tuned from DCPT pre-trained weights for improved restoration quality
 * 📊 Built-in PSNR / SSIM evaluation
 
-\---
+
 
 ## 🖼️ Network Architecture
 
@@ -24,7 +20,7 @@ The figure above shows the overall architecture of HOGformer, consisting of thre
 
 > A high-resolution vector version is available at `assets/Framework.pdf`.
 
-\---
+
 
 ## 📁 Directory Structure
 
@@ -55,7 +51,7 @@ The figure above shows the overall architecture of HOGformer, consisting of thre
 └── README.md
 ```
 
-\---
+
 
 ## 🔧 Requirements
 
@@ -70,7 +66,7 @@ pip install -r requirements.txt
 
 > Please adjust the PyTorch / CUDA versions in `requirements.txt` according to your actual setup.
 
-\---
+
 
 ## 📦 Dataset Preparation
 
@@ -84,7 +80,7 @@ This project is evaluated on the **Allweather** benchmark, which includes the fo
 
 Please place the downloaded datasets according to the directory structure above, or modify the path arguments in the test commands to point to your own dataset locations.
 
-\---
+
 
 ## 🏋️ Pretrained Weights
 
@@ -111,7 +107,7 @@ path:
 
 > ⚠️ If this weight path is not configured correctly, the test script may fail to load the model or throw an error. Please double-check this before running any tests.
 
-\---
+
 
 ## 🚀 Quick Test
 
@@ -158,7 +154,7 @@ python testok.py \\
 |`--gt\_folder`|Folder containing the corresponding clean ground-truth images (used for PSNR/SSIM)|
 |`--output\_folder`|Folder where restored images will be saved|
 
-\---
+
 
 
 ## 📌 Notes
