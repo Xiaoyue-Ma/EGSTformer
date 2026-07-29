@@ -160,17 +160,6 @@ python testok.py \\
 
 \---
 
-## 📊 Results
-
-|Dataset|PSNR (dB)|SSIM|
-|-|-|-|
-|Snow100K-S|33.02|0.9466|
-|RainDrop|-|-|
-|Test1|-|-|
-
-> Update the table above with your actual test results.
-
-\---
 
 ## 📌 Notes
 
