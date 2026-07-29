@@ -1,0 +1,198 @@
+# ===================================================================
+# HOGformer Fine-tuning after DCPT Pre-training
+# ===================================================================
+# This configuration is for fine-tuning HOGformer on all-weather
+# restoration task after DCPT pre-training
+# ===================================================================
+
+# general settings
+name: finetune_HOGformer_Allweather_after_DCPT
+model_type: ImageCleanModel  # 使用普通的图像复原模型
+scale: 1
+num_gpu: 1
+manual_seed: 100
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: TrainSet
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/train/gt/
+    dataroot_lq: ./Allweather/train/input/
+    geometric_augs: true
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 8
+
+    ### -------------Progressive training--------------------------
+    mini_batch_sizes: [8,5,2,1,1]
+    iters: [92000,84000,56000,36000,32000]
+    gt_size: 400
+    gt_sizes: [128,160,256,320,400]
+    ### ------------------------------------------------------------
+
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val_snow_s:
+    name: ValSet_Snow100K-S
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-S/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-S/synthetic/
+    io_backend:
+      type: disk
+  val_snow_l:
+    name: ValSet_Snow100K-L
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-L/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-L/synthetic/
+    io_backend:
+      type: disk
+  val_test1:
+    name: ValSet_Test1
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Test1/gt/
+    dataroot_lq: ./Allweather/test/Test1/input/
+    io_backend:
+      type: disk
+  val_raindrop:
+    name: ValSet_RainDrop
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/RainDrop/test_a/gt/
+    dataroot_lq: ./Allweather/test/RainDrop/test_a/input/
+    io_backend:
+      type: disk
+
+# ===================================================================
+# Network Configuration - with DCPT Pre-trained Weights
+# ===================================================================
+network_g:
+  type: HOGformer
+  inp_channels: 3
+  out_channels: 3
+  dim: 36
+  num_blocks: [4,4,6,8]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2.667
+  bias: False
+  
+  LayerNorm_type: WithBias  # 可以继续使用WithBias，或改为DynamicTanh
+  dyt_alpha: 0.5
+  
+  dual_pixel_task: False
+  
+  # 启用SPM (在finetune阶段启用，提升性能)
+  use_spm: true
+  prompt_len: 5
+  num_experts_per_level: [2,3,3,4]
+
+# ===================================================================
+# CRITICAL: Load DCPT Pre-trained Weights
+# ===================================================================
+path:
+  # 指定DCPT预训练的encoder权重
+  # 请修改为你的实际预训练模型路径
+  pretrain_network_g: experiments/pretrain_HOGformer_Allweather_DCPT/models/net_g_100000.pth
+  strict_load_g: false  # 因为SPM是新增的，所以用false
+  resume_state: ~
+
+# ===================================================================
+# Training Settings
+# ===================================================================
+train:
+  total_iter: 300000
+  warmup_iter: -1
+  use_grad_clip: true
+
+  scheduler:
+    type: CosineAnnealingRestartCyclicLR
+    periods: [92000, 208000]
+    restart_weights: [1,1]
+    eta_mins: [0.0003,0.000001]
+  
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+
+  optim_g:
+    type: AdamW
+    lr: !!float 3e-4
+    weight_decay: !!float 1e-4
+    betas: [0.9, 0.999]
+  
+  # Losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1
+    reduction: mean
+  
+  seq_opt:
+    type: Pearson
+  
+  # CPR settings
+  use_cpr: true
+  cpr_alpha: 0.01
+  cpr_num_neg: 4
+
+# ===================================================================
+# Validation Settings
+# ===================================================================
+val:
+  window_size: 16
+  val_freq: !!float 1e3
+  save_img: true
+  rgb2bgr: true
+  use_image: true
+  max_minibatch: 8
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: true
+
+    ssim:  
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+# ===================================================================
+# DCPT Fine-tuning Notes
+# ===================================================================
+# 
+# 与从零训练相比的主要优势：
+# 1. 更快收敛：DCPT预训练让模型已经学会了识别退化类型
+# 2. 更好性能：论文显示可获得2-6dB的PSNR提升
+# 3. 更强泛化：对未见过的退化类型也有更好的处理能力
+#
+# Fine-tuning策略：
+# - 学习率可以与预训练相同(3e-4)，或稍低(1e-4)
+# - 可以使用更少的迭代次数达到相同效果
+# - SPM在finetune阶段启用，进一步提升性能
+#
+# Expected Performance Gain (based on DCPT paper):
+# - 5D all-in-one: +2.08dB average
+# - Mixed degradation: +5-6dB
+#
+# ===================================================================

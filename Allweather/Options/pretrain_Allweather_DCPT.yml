@@ -1,0 +1,212 @@
+# ===================================================================
+# DCPT Pre-training Configuration for HOGformer
+# ===================================================================
+# This config enables degradation classification pre-training (DCPT)
+# for HOGformer on all-weather restoration dataset
+# ===================================================================
+
+# general settings
+name: pretrain_HOGformer_Allweather_DCPT
+model_type: DCPTModel
+scale: 1
+num_gpu: auto
+manual_seed: 100
+classify: true
+
+# dataset and data loader settings
+# 注意：这里需要根据你的实际数据集路径修改
+# Allweather数据集包含多种天气退化类型
+datasets:
+  train_1:
+    name: AllWeather  # 假设这是综合的全天气数据集
+    type: PairedImageDataset  
+    dataroot_gt: ./Allweather/train/gt/
+    dataroot_lq: ./Allweather/train/input/
+    io_backend:
+      type: disk
+    gt_size: 128  # DCPT预训练使用128x128 patch
+    use_hflip: true
+    use_rot: true
+    
+  # 如果你的数据集是分开的（雨、雾、雪等），可以这样设置：
+  # train_2:
+  #   name: Rain
+  #   type: PairedImageDataset
+  #   dataroot_gt: ./Allweather/train/rain/gt/
+  #   dataroot_lq: ./Allweather/train/rain/input/
+  #   io_backend:
+  #     type: disk
+  #   gt_size: 128
+  #   use_hflip: true
+  #   use_rot: true
+  
+  # train_3:
+  #   name: Snow
+  #   type: PairedImageDataset
+  #   dataroot_gt: ./Allweather/train/snow/gt/
+  #   dataroot_lq: ./Allweather/train/snow/input/
+  #   io_backend:
+  #     type: disk
+  #   gt_size: 128
+  #   use_hflip: true
+  #   use_rot: true
+
+  # Validation datasets
+  val_1:
+    name: ValSet_Test1
+    type: PairedImageDataset
+    dataroot_gt: ./Allweather/test/Test1/gt/
+    dataroot_lq: ./Allweather/test/Test1/input/
+    io_backend:
+      type: disk
+    num_worker_per_gpu: 1
+    batch_size_per_gpu: 1
+    center_crop: 256
+
+dataloader:
+  phase: train
+  use_shuffle: true
+  num_worker_per_gpu: 4  # 根据你的CPU调整
+  batch_size_per_gpu: 8   # 根据你的GPU显存调整
+  dataset_enlarge_ratio: 1
+  prefetch_mode: ~
+  pin_memory: true
+
+dataloader_val:
+  phase: val
+  use_shuffle: false
+  num_worker_per_gpu: 1
+  batch_size_per_gpu: 1
+  dataset_enlarge_ratio: 1
+  prefetch_mode: ~
+  pin_memory: true
+
+# ===================================================================
+# Network Architecture - HOGformer Encoder (for DCPT)
+# ===================================================================
+network_g:
+  type: HOGformer
+  inp_channels: 3
+  out_channels: 3
+  dim: 36  # 保持与原配置一致
+  num_blocks: [4,4,6,8]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2.667
+  bias: False
+  LayerNorm_type: WithBias  # 预训练时使用标准LayerNorm
+  dual_pixel_task: False
+  use_spm: false  # 预训练阶段不使用SPM，加快训练速度
+
+# DCPT需要找到encoder输出点，HOGformer有4个encoder层
+# 特征维度: [dim*1, dim*2, dim*4, dim*8] = [36, 72, 144, 288]
+hook_names: encoder_level  # 会hook所有包含 "encoder_level" 的层
+
+# ===================================================================
+# Degradation Classifier (Decoder for DCPT)
+# ===================================================================
+network_dc:
+  type: PromptIR_NoImg_DC  # 使用DCPT提供的分类器
+  feature_dims: [36, 72, 144, 288]  # 对应HOGformer的4个encoder输出
+  num_classes: 1  # 根据你的退化类型数量设置
+                  # 如果是混合天气数据集，设为数据集数量
+                  # 例如：rain, snow, haze, rain+snow等，则设为实际类别数
+
+path:
+  pretrain_network_g: ~
+  strict_load_g: false
+  resume_state: ~
+
+# ===================================================================
+# Training Settings
+# ===================================================================
+train:
+  ema_decay: 0.999
+  
+  # Encoder optimizer (HOGformer)
+  optim_g:
+    type: AdamW
+    lr: !!float 3e-4  # DCPT建议的encoder学习率
+    weight_decay: 0
+    betas: [0.9, 0.999]
+  
+  # Decoder optimizer (Degradation Classifier)
+  optim_dc:
+    type: AdamW
+    lr: !!float 1e-4  # DCPT建议的decoder学习率
+    weight_decay: !!float 1e-4
+    betas: [0.9, 0.999]
+
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [100000]  # DCPT通常预训练100k iterations
+    restart_weights: [1]
+    eta_min: !!float 1e-6
+
+  total_iter: 100000  # DCPT预训练迭代次数
+  warmup_iter: -1
+
+  # Losses
+  pixel_opt:  # L1 loss for generation stage
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+    
+  classify_opt:  # Focal loss for classification stage
+    type: FocalLoss
+    gamma: 2.0  # Focal loss参数，处理类别不平衡
+
+# ===================================================================
+# Validation Settings
+# ===================================================================
+val:
+  val_freq: !!float 5e3  # 每5000次迭代验证一次
+  save_img: false  # 预训练阶段不保存图片
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: true
+      image_range: 255.0
+
+# ===================================================================
+# Logging Settings
+# ===================================================================
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3  # 每5000次保存一次checkpoint
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+# ===================================================================
+# IMPORTANT NOTES:
+# ===================================================================
+# 1. 数据集配置：
+#    - 如果你的数据集是混合的（一个文件夹包含所有退化类型），
+#      只需配置train_1即可
+#    - 如果数据集分类存储（rain/, snow/, haze/等），
+#      需要为每个退化类型配置一个train_N
+#
+# 2. num_classes设置：
+#    - 需要等于你配置的数据集数量(train_1, train_2, ...)
+#    - 例如：3个数据集(rain, snow, haze) → num_classes: 3
+#
+# 3. 预训练后使用：
+#    - 预训练完成后会得到两个模型文件：
+#      * net_g_xxxxx.pth - HOGformer编码器权重
+#      * net_dc_xxxxx.pth - 退化分类器权重
+#    - 在finetune时只需加载net_g即可：
+#      pretrain_network_g: experiments/pretrain_HOGformer_Allweather_DCPT/models/net_g_100000.pth
+#
+# 4. 显存优化：
+#    - 如果显存不足，减小batch_size_per_gpu
+#    - 可以将gt_size从128减小到96
+# ===================================================================

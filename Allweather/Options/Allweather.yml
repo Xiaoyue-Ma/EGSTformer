@@ -1,0 +1,201 @@
+# ===================================================================
+# HOGformer with DynamicTanh (DyT) - Configuration File
+# ===================================================================
+# This configuration enables DyT as a replacement for LayerNorm
+# Maintains all existing features (SPM, CPR) while adding DyT support
+# ===================================================================
+
+# general settings
+name: Allweather_HOGformer_DyT_SPM_CPR  # Updated name to indicate DyT
+model_type: ImageCleanModel
+scale: 1
+num_gpu: 1
+manual_seed: 100
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: TrainSet
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/train/gt/
+    dataroot_lq: ./Allweather/train/input/
+    geometric_augs: true
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 8
+
+    ### -------------Progressive training--------------------------
+    mini_batch_sizes: [8,5,2,1,1]
+    iters: [92000,84000,56000,36000,32000]
+    gt_size: 400
+    gt_sizes: [128,160,256,320,400]
+    ### ------------------------------------------------------------
+
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val_snow_s:
+    name: ValSet_Snow100K-S
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-S/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-S/synthetic/
+    io_backend:
+      type: disk
+  val_snow_l:
+    name: ValSet_Snow100K-L
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-L/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-L/synthetic/
+    io_backend:
+      type: disk
+  val_test1:
+    name: ValSet_Test1
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Test1/gt/
+    dataroot_lq: ./Allweather/test/Test1/input/
+    io_backend:
+      type: disk
+  val_raindrop:
+    name: ValSet_RainDrop
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/RainDrop/test_a/gt/
+    dataroot_lq: ./Allweather/test/RainDrop/test_a/input/
+    io_backend:
+      type: disk
+
+
+# ===================================================================
+# ========== UPDATED: Network with DyT Support ==========
+# ===================================================================
+network_g:
+  type: HOGformer
+  inp_channels: 3
+  out_channels: 3
+  dim: 36
+  num_blocks: [4,4,6,8]
+  num_refinement_blocks: 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: 2.667
+  bias: False
+  
+  # ===== DyT Configuration (NEW!) =====
+  LayerNorm_type: DynamicTanh  # Options: 'WithBias', 'BiasFree', 'DynamicTanh'
+  dyt_alpha: 0.5               # Initial alpha for DyT (recommended: 0.3-0.8)
+  
+  dual_pixel_task: False
+  
+  # ===== SPM parameters (unchanged) =====
+  use_spm: true
+  prompt_len: 5
+  num_experts_per_level: [2,3,3,4]
+
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# ===================================================================
+# ========== Training Settings (unchanged) ==========
+# ===================================================================
+train:
+  total_iter: 300000
+  warmup_iter: -1
+  use_grad_clip: true
+
+  scheduler:
+    type: CosineAnnealingRestartCyclicLR
+    periods: [92000, 208000]
+    restart_weights: [1,1]
+    eta_mins: [0.0003,0.000001]
+  
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+
+  optim_g:
+    type: AdamW
+    lr: !!float 3e-4
+    weight_decay: !!float 1e-4
+    betas: [0.9, 0.999]
+  
+  # ===== Losses (unchanged) =====
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1
+    reduction: mean
+  
+  seq_opt:
+    type: Pearson
+  
+  # ===== CPR settings (unchanged) =====
+  use_cpr: true
+  cpr_alpha: 0.01
+  cpr_num_neg: 4
+
+# ===================================================================
+# ========== Validation Settings (unchanged) ==========
+# ===================================================================
+val:
+  window_size: 16
+  val_freq: !!float 1e3
+  save_img: true
+  rgb2bgr: true
+  use_image: true
+  max_minibatch: 8
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: true
+
+    ssim:  
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 10
+  save_checkpoint_freq: !!float 1e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+
+# ===================================================================
+# ========== DyT Experiment Notes ==========
+# ===================================================================
+# 
+# Key Changes from Original Config:
+# 1. LayerNorm_type: 'WithBias' → 'DynamicTanh'
+# 2. Added dyt_alpha: 0.5 (configurable)
+#
+# Expected Behavior:
+# - Training speed: ~5-10% faster (reduced normalization compute)
+# - Memory usage: Slightly lower (no mean/var statistics)
+# - Performance: Similar or +0.2-0.5 PSNR (based on DyT paper)
+#
+# Recommended Alpha Values for Experimentation:
+# - Conservative: 0.3 (more stable, closer to LayerNorm behavior)
+# - Default: 0.5 (paper recommendation for vision tasks)
+# - Aggressive: 0.8 (stronger scaling, may need LR tuning)
+#
+# To Compare with LayerNorm:
+# Simply change LayerNorm_type back to 'WithBias' and train
+#
+# ===================================================================

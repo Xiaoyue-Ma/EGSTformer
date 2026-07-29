@@ -1,0 +1,223 @@
+# ===================================================================
+# DCPT Pre-training for HOGformer (Adapted to HOGformer's Dataloader)
+# ===================================================================
+# 此配置适配HOGformer的数据加载逻辑：
+# - batch_size_per_gpu 和 num_worker_per_gpu 在 dataset 级别设置
+# - 使用 !!int 强制类型转换避免字符串错误
+# ===================================================================
+
+name: pretrain_HOGformer_Allweather_DCPT
+model_type: DCPTModel
+scale: 1
+num_gpu: auto
+manual_seed: 100
+classify: true
+
+# ===================================================================
+# 数据集配置 - HOGformer风格
+# ===================================================================
+datasets:
+  train:
+    name: AllWeather
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/train/gt/
+    dataroot_lq: ./Allweather/train/input/
+    iters: [100000]
+    mini_batch_sizes: [2]
+    gt_sizes: [256]
+    # HOGformer特有设置
+    geometric_augs: true
+    filename_tmpl: '{}'
+    
+    io_backend:
+      type: disk
+    
+    # ⚠️ 关键：HOGformer从这里读取batch_size和worker数量
+    # 使用 !!int 强制转换为整数，避免类型错误
+    batch_size_per_gpu: !!int 8   # 根据GPU显存调整
+    num_worker_per_gpu: !!int 4   # 根据CPU核心数调整
+    
+    # 数据增强
+    gt_size: !!int 128  # patch size
+    use_hflip: true
+    use_rot: true
+    use_shuffle: true
+
+  # 验证集
+  val_snow_s:
+    name: ValSet_Snow100K-S
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-S/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-S/synthetic/
+    io_backend:
+      type: disk
+  val_snow_l:
+    name: ValSet_Snow100K-L
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Snow100K-Test/Snow100K-L/gt/
+    dataroot_lq: ./Allweather/test/Snow100K-Test/Snow100K-L/synthetic/
+    io_backend:
+      type: disk
+  val_test1:
+    name: ValSet_Test1
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/Test1/gt/
+    dataroot_lq: ./Allweather/test/Test1/input/
+    io_backend:
+      type: disk
+  val_raindrop:
+    name: ValSet_RainDrop
+    type: Dataset_PairedImage
+    dataroot_gt: ./Allweather/test/RainDrop/test_a/gt/
+    dataroot_lq: ./Allweather/test/RainDrop/test_a/input/
+    io_backend:
+      type: disk
+    
+    io_backend:
+      type: disk
+    
+    # 验证集的batch_size和worker
+    batch_size_per_gpu: !!int 1
+    num_worker_per_gpu: !!int 1
+
+# ===================================================================
+# Dataloader配置（可能不被HOGformer使用，但保留以防万一）
+# ===================================================================
+dataloader:
+  phase: train
+  use_shuffle: true
+  num_worker_per_gpu: !!int 4
+  batch_size_per_gpu: !!int 8
+  dataset_enlarge_ratio: !!int 1
+  prefetch_mode: ~
+  pin_memory: true
+
+dataloader_val:
+  phase: val
+  use_shuffle: false
+  num_worker_per_gpu: !!int 1
+  batch_size_per_gpu: !!int 1
+  dataset_enlarge_ratio: !!int 1
+  prefetch_mode: ~
+  pin_memory: true
+
+# ===================================================================
+# Network Architecture
+# ===================================================================
+network_g:
+  type: HOGformer
+  inp_channels: !!int 3
+  out_channels: !!int 3
+  dim: !!int 36
+  num_blocks: [4,4,6,8]
+  num_refinement_blocks: !!int 4
+  heads: [1,2,4,8]
+  ffn_expansion_factor: !!float 2.667
+  bias: false
+  LayerNorm_type: WithBias
+  dual_pixel_task: false
+  use_spm: false  # 预训练时关闭SPM
+
+# ===================================================================
+# Hook配置
+# ===================================================================
+hook_names: encoder_level
+
+# ===================================================================
+# Degradation Classifier
+# ===================================================================
+network_dc:
+  type: PromptIR_NoImg_DC
+  feature_dims: [144, 72, 36]
+  num_classes: !!int 4
+
+# ===================================================================
+# Path
+# ===================================================================
+path:
+  pretrain_network_g: ~
+  strict_load_g: false
+  resume_state: ~
+
+# ===================================================================
+# Training Settings
+# ===================================================================
+train:
+  ema_decay: !!float 0.999
+  iters: [100000]
+  mini_batch_sizes: [2]
+  gt_sizes: [256]
+  
+  optim_g:
+    type: AdamW
+    lr: !!float 3e-4
+    weight_decay: !!float 0
+    betas: [0.9, 0.999]
+  
+  optim_dc:
+    type: AdamW
+    lr: !!float 1e-4
+    weight_decay: !!float 1e-4
+    betas: [0.9, 0.999]
+
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [100000]
+    restart_weights: [1]
+    eta_min: !!float 1e-6
+
+  total_iter: !!int 100000
+  warmup_iter: !!int -1
+
+  # Losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: !!float 1.0
+    reduction: mean
+    
+  classify_opt:
+    type: FocalLoss
+    gamma: !!float 2.0
+
+# ===================================================================
+# Validation Settings
+# ===================================================================
+val:
+  val_freq: !!float 2e4
+  save_img: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: !!int 0
+      test_y_channel: true
+      image_range: !!float 255.0
+
+# ===================================================================
+# Logging
+# ===================================================================
+logger:
+  print_freq: !!int 100
+  save_checkpoint_freq: !!float 2e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# ===================================================================
+# Distributed Training
+# ===================================================================
+dist_params:
+  backend: nccl
+  port: !!int 29500
+
+# ===================================================================
+# 重要说明：
+# ===================================================================
+# 1. 所有整数参数都使用 !!int 强制类型转换
+# 2. 所有浮点数参数都使用 !!float 强制类型转换
+# 3. batch_size_per_gpu 和 num_worker_per_gpu 在 dataset 级别设置
+#    这是因为HOGformer的create_dataloader从dataset_opt中读取
+# 4. 如果显存不足，减小 batch_size_per_gpu
+# 5. 如果CPU核心少，减小 num_worker_per_gpu
+# ===================================================================
