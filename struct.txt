@@ -1,0 +1,214 @@
+./autodl-tmp/
+    ├── =2.0.0
+    │   │   ├── Allweather_HOGformer.yml
+    │   │   ├── Allweather_HOGformer_spm.yml
+    │   │   ├── finetune_HOGformer_after_DCPT.yml
+    │   │   └── pretrain_HOGformer_Allweather_DCPT.yml
+    │   ├── Options/
+    │   ├── compute_psnr.py
+    │   ├── test_histoformer.py
+    │   └── util.py
+    ├── Allweather/
+    │   ├── Allweather_HOGformer.yml
+    │   ├── Allweather_HOGformer_spm.yml
+    │   ├── finetune_HOGformer_after_DCPT.yml
+    │   └── pretrain_HOGformer_Allweather_DCPT.yml
+    ├── Options/
+    ├── VERSION
+    │   ├── EncDec_Deep7Layers.cpython-310.pyc
+    │   ├── EncDec_Mamba.cpython-310.pyc
+    │   ├── cplir_style_bridge.cpython-310.pyc
+    │   ├── mair_arch.cpython-310.pyc
+    │   ├── perceptual.cpython-310.pyc
+    │   ├── shift_scanf_util.cpython-310.pyc
+    │   ├── train_data_functions.cpython-310.pyc
+    │   ├── utils_network.cpython-310.pyc
+    │   ├── utils_val.cpython-310.pyc
+    │   └── val_data_functions.cpython-310.pyc
+    ├── __pycache__/
+    │   │   └── version.cpython-310.pyc
+    │   ├── __pycache__/
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── arch_util.cpython-310.pyc
+    │   │   │   ├── nafnet_arch.cpython-310.pyc
+    │   │   │   ├── promptir_arch.cpython-310.pyc
+    │   │   │   ├── rcan_arch.cpython-310.pyc
+    │   │   │   ├── restormer_arch.cpython-310.pyc
+    │   │   │   └── swinir_arch.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   ├── arch_util.py
+    │   │   ├── degrad_classify_arch123.py
+    │   │   ├── nafnet_arch.py
+    │   │   ├── promptir_arch.py
+    │   │   ├── rcan_arch.py
+    │   │   ├── restormer_arch.py
+    │   │   ├── swinir_arch.py
+    │   │   └── 说明.txt
+    │   ├── archs/
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── data_sampler.cpython-310.pyc
+    │   │   │   ├── data_util.cpython-310.pyc
+    │   │   │   ├── paired_image_dataset.cpython-310.pyc
+    │   │   │   ├── prefetch_dataloader.cpython-310.pyc
+    │   │   │   ├── single_image_dataset.cpython-310.pyc
+    │   │   │   ├── transforms.cpython-310.pyc
+    │   │   │   └── video_test_dataset.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   ├── data_sampler.py
+    │   │   ├── data_util.py
+    │   │   │   ├── meta_info_DIV2K800sub_GT.txt
+    │   │   │   ├── meta_info_REDS4_test_GT.txt
+    │   │   │   ├── meta_info_REDS_GT.txt
+    │   │   │   ├── meta_info_REDSofficial4_test_GT.txt
+    │   │   │   ├── meta_info_REDSval_official_test_GT.txt
+    │   │   │   ├── meta_info_Vimeo90K_test_GT.txt
+    │   │   │   ├── meta_info_Vimeo90K_test_fast_GT.txt
+    │   │   │   ├── meta_info_Vimeo90K_test_medium_GT.txt
+    │   │   │   ├── meta_info_Vimeo90K_test_slow_GT.txt
+    │   │   │   └── meta_info_Vimeo90K_train_GT.txt
+    │   │   ├── meta_info/
+    │   │   ├── paired_image_dataset.py
+    │   │   ├── prefetch_dataloader.py
+    │   │   ├── single_image_dataset.py
+    │   │   ├── transforms.py
+    │   │   └── video_test_dataset.py
+    │   ├── data/
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── basic_loss.cpython-310.pyc
+    │   │   │   ├── classify_loss.cpython-310.pyc
+    │   │   │   └── loss_util.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   ├── basic_loss.py
+    │   │   ├── classify_loss.py
+    │   │   ├── loss_util.py
+    │   │   └── 说明.txt
+    │   ├── losses/
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── __init__.cpython-37.pyc
+    │   │   │   ├── metric_util.cpython-310.pyc
+    │   │   │   ├── metric_util.cpython-37.pyc
+    │   │   │   ├── niqe.cpython-310.pyc
+    │   │   │   ├── niqe.cpython-37.pyc
+    │   │   │   ├── psnr_ssim.cpython-310.pyc
+    │   │   │   ├── psnr_ssim.cpython-37.pyc
+    │   │   │   └── psnr_ssim_dcpt.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   ├── fid.py
+    │   │   ├── metric_util.py
+    │   │   ├── niqe.py
+    │   │   ├── niqe_pris_params.npz
+    │   │   ├── psnr_ssim.py
+    │   │   └── psnr_ssim_dcpt.py
+    │   ├── metrics/
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── base_model.cpython-310.pyc
+    │   │   │   ├── degradation_classification_pretrain_model.cpython-310.pyc
+    │   │   │   ├── image_restoration_model.cpython-310.pyc
+    │   │   │   └── lr_scheduler.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   │   ├── __init__.py
+    │   │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   │   ├── degrad_classify_arch.cpython-310.pyc
+    │   │   │   │   ├── dynamic_tanh.cpython-310.pyc
+    │   │   │   │   └── hogformer_arch.cpython-310.pyc
+    │   │   │   ├── __pycache__/
+    │   │   │   ├── arch_util.py
+    │   │   │   ├── degrad_classify_arch.py
+    │   │   │   ├── dynamic_tanh.py
+    │   │   │   ├── hogformer_arch.py
+    │   │   │   ├── hogformer_arch_dcpt.py
+    │   │   │   └── hogformer_arch_spm.py
+    │   │   ├── archs/
+    │   │   ├── base_model.py
+    │   │   ├── degradation_classification_pretrain_model.py
+    │   │   ├── image_restoration_model.py
+    │   │   │   ├── __init__.py
+    │   │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   │   ├── cpr_loss.cpython-310.pyc
+    │   │   │   │   ├── loss_util.cpython-310.pyc
+    │   │   │   │   └── losses.cpython-310.pyc
+    │   │   │   ├── __pycache__/
+    │   │   │   ├── cpr_loss.py
+    │   │   │   ├── loss_util.py
+    │   │   │   └── losses.py
+    │   │   ├── losses/
+    │   │   └── lr_scheduler.py
+    │   ├── models/
+    │   ├── test.py
+    │   ├── train.py
+    │   │   ├── __init__.py
+    │   │   │   ├── __init__.cpython-310.pyc
+    │   │   │   ├── __init__.cpython-37.pyc
+    │   │   │   ├── color_util.cpython-310.pyc
+    │   │   │   ├── dist_util.cpython-310.pyc
+    │   │   │   ├── dist_util.cpython-37.pyc
+    │   │   │   ├── file_client.cpython-310.pyc
+    │   │   │   ├── file_client.cpython-37.pyc
+    │   │   │   ├── img_util.cpython-310.pyc
+    │   │   │   ├── img_util.cpython-37.pyc
+    │   │   │   ├── logger.cpython-310.pyc
+    │   │   │   ├── logger.cpython-37.pyc
+    │   │   │   ├── matlab_functions.cpython-310.pyc
+    │   │   │   ├── matlab_functions.cpython-37.pyc
+    │   │   │   ├── misc.cpython-310.pyc
+    │   │   │   ├── misc.cpython-37.pyc
+    │   │   │   ├── options.cpython-310.pyc
+    │   │   │   └── registry.cpython-310.pyc
+    │   │   ├── __pycache__/
+    │   │   ├── bundle_submissions.py
+    │   │   ├── color_util.py
+    │   │   ├── create_lmdb.py
+    │   │   ├── dist_util.py
+    │   │   ├── download_util.py
+    │   │   ├── face_util.py
+    │   │   ├── file_client.py
+    │   │   ├── flow_util.py
+    │   │   ├── img_util.py
+    │   │   ├── lmdb_util.py
+    │   │   ├── logger.py
+    │   │   ├── matlab_functions.py
+    │   │   ├── misc.py
+    │   │   ├── options.py
+    │   │   └── registry.py
+    │   ├── utils/
+    │   └── version.py
+    ├── basicsr/
+    │   │   ├── events.out.tfevents.1776323588.autodl-container-c5d44faf3d-51b7841b
+    │   │   ├── events.out.tfevents.1776323666.autodl-container-c5d44faf3d-51b7841b
+    │   │   │   └── net_g_210000.pth
+    │   │   ├── models/
+    │   │   ├── train_finetune_HOGformer_Allweather_after_DCPT_20260416_151252.log
+    │   │   ├── train_finetune_HOGformer_Allweather_after_DCPT_20260416_151410.log
+    │   │       └── 210000.state
+    │   │   └── training_states/
+    │   ├── finetune_HOGformer_Allweather_after_DCPT/
+    │           ├── net_dc_100000.pth
+    │           └── net_g_100000.pth
+    │       └── models/
+    │   └── pretrain_HOGformer_Allweather_DCPT/
+    ├── experiments/
+    ├── folder_structure__20260310_154125.txt
+    ├── hog.zip
+    ├── requirements.txt
+    ├── setup.cfg
+    ├── setup.py
+    │       ├── events.out.tfevents.1776323572.autodl-container-c5d44faf3d-51b7841b.19301.0
+    │       └── events.out.tfevents.1776323650.autodl-container-c5d44faf3d-51b7841b.23559.0
+    │   └── finetune_HOGformer_Allweather_after_DCPT/
+    ├── tb_logger/
+    ├── test.py
+    ├── test.zip
+    ├── test3.py
+    ├── testnor.py
+    ├── testok.py
+    ├── testpre.py
+    ├── train.sh
+    ├── train.txt
+    ├── train.zip
+    ├── tree.py
+    └── zip.py
