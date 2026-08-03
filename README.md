@@ -1,4 +1,4 @@
-# Oriented Energy Prior Guided Sparse Transformer for All-in-One Image Restoration
+# All-in-One Image Restoration via Sparse Transformer with Energy-Oriented Prior
 
 ## ✨ Features
 
